@@ -5,18 +5,18 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
-// Import routes
-import authRoutes from "../server/src/routes/auth.js";
-import userRoutes from "../server/src/routes/user.js";
-import productRoutes from "../server/src/routes/product.js";
-import cartRoutes from "../server/src/routes/cart.js";
-import orderRoutes from "../server/src/routes/order.js";
-import adminRoutes from "../server/src/routes/admin.js";
-import addressRoutes from "../server/src/routes/address.js";
-import uploadsRoutes from "../server/src/routes/uploads.js";
-import webhookRoutes from "../server/src/routes/webhook.js";
-import { errorHandler } from "../server/src/middleware/errorHandler.js";
-import { notFound } from "../server/src/middleware/notFound.js";
+// Import routes from compiled server
+import authRoutes from "../server/dist/routes/auth.js";
+import userRoutes from "../server/dist/routes/user.js";
+import productRoutes from "../server/dist/routes/product.js";
+import cartRoutes from "../server/dist/routes/cart.js";
+import orderRoutes from "../server/dist/routes/order.js";
+import adminRoutes from "../server/dist/routes/admin.js";
+import addressRoutes from "../server/dist/routes/address.js";
+import uploadsRoutes from "../server/dist/routes/uploads.js";
+import webhookRoutes from "../server/dist/routes/webhook.js";
+import { errorHandler } from "../server/dist/middleware/errorHandler.js";
+import { notFound } from "../server/dist/middleware/notFound.js";
 
 // Load environment variables
 dotenv.config();
