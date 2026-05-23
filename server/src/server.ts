@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import { Webhook, WebhookVerificationError } from 'svix';
 import connectDB from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
@@ -17,6 +18,7 @@ import orderRoutes from './routes/order.js';
 import adminRoutes from './routes/admin.js';
 import addressRoutes from './routes/address.js';
 import uploadsRoutes from './routes/uploads.js';
+import webhookRoutes from './routes/webhook.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,9 +37,70 @@ app.use(cors({
   credentials: true
 }));
 
+// Clerk webhook endpoint MUST be before body parsing middleware
+// to receive raw body for signature verification
+app.post('/api/clerk', express.raw({ type: 'application/json' }), async (req, res) => {
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error('🔴 CLERK_WEBHOOK_SECRET not configured');
+    return res.status(500).json({ 
+      error: 'Webhook configuration error',
+      message: 'CLERK_WEBHOOK_SECRET is not set'
+    });
+  }
+
+  try {
+    const payload = req.body;
+    const headers = req.headers;
+
+    const svixId = headers['svix-id'] as string;
+    const svixTimestamp = headers['svix-timestamp'] as string;
+    const svixSignature = headers['svix-signature'] as string;
+
+    // Validate required headers
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      console.warn('⚠️  Missing Svix headers');
+      return res.status(401).json({ error: 'Missing webhook headers' });
+    }
+
+    // Verify webhook signature
+    const wh = new Webhook(webhookSecret);
+    let event;
+
+    try {
+      event = wh.verify(JSON.stringify(payload), {
+        'svix-id': svixId,
+        'svix-timestamp': svixTimestamp,
+        'svix-signature': svixSignature,
+      }) as any;
+    } catch (err) {
+      if (err instanceof WebhookVerificationError) {
+        console.error('🔴 Webhook signature verification failed');
+        return res.status(401).json({ error: 'Invalid webhook signature' });
+      }
+      throw err;
+    }
+
+    console.log(`📨 Received Clerk webhook: ${event.type}`);
+
+    // Acknowledge receipt
+    res.status(200).json({ 
+      success: true,
+      message: `Webhook ${event.type} processed successfully`,
+      eventId: svixId
+    });
+  } catch (err) {
+    console.error('🔴 Webhook processing error:', err);
+    res.status(500).json({ 
+      error: 'Failed to process webhook',
+      message: err instanceof Error ? err.message : 'Unknown error'
+    });
+  }
+});
+
 // Webhook route MUST be before body parsing middleware
 // to receive raw body for signature verification
-import webhookRoutes from './routes/webhook.js';
 app.use('/api/webhooks', webhookRoutes);
 
 // Rate limiting
