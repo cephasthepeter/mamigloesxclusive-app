@@ -2,27 +2,8 @@
   "version": 2,
   "buildCommand": "cd server && npm run build",
   "installCommand": "cd server && npm install",
+  "devCommand": "cd server && npm run dev",
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "server/src/server.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server/src/server.ts"
-    },
-    {
-      "src": "/health",
-      "dest": "server/src/server.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "server/src/server.ts"
-    }
-  ]
+  }
 }
