@@ -1,10 +1,5 @@
 {
   "version": 2,
   "buildCommand": "cd server && npm run build",
-  "installCommand": "cd server && npm install",
-  "devCommand": "cd server && npm run dev",
-  "outputDirectory": "server/dist",
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "installCommand": "npm install && cd server && npm install"
 }
