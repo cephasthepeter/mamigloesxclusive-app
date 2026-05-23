@@ -1,5 +1,5 @@
 {
   "version": 2,
   "buildCommand": "cd server && npm run build",
-  "installCommand": "npm install && cd server && npm install"
+  "installCommand": "cd server && npm install"
 }
