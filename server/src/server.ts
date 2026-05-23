@@ -24,7 +24,7 @@ import webhookRoutes from './routes/webhook.js';
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+// connectDB(); // TODO: Enable when MongoDB is ready
 
 const app = express();
 
