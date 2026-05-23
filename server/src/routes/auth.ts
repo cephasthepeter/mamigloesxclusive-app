@@ -10,7 +10,7 @@ const router = express.Router();
 // @access  Private
 router.get('/me', protect, async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('addresses');
+    const user = await User.findById(req.user?.id).populate('addresses');
 
     res.status(200).json({
       success: true,

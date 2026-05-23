@@ -1,26 +1,9 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "src/server.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "src/server.ts"
-    },
-    {
-      "src": "/health",
-      "dest": "src/server.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "src/server.ts"
-    }
-  ]
+  }
 }

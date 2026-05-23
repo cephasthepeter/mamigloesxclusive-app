@@ -1,5 +1,4 @@
 import { Request } from 'express';
-import { IUser } from '../models/User.js';
 
 /**
  * Extend Express Request to include authenticated user data
@@ -7,9 +6,11 @@ import { IUser } from '../models/User.js';
 declare global {
   namespace Express {
     interface Request {
-      user?: IUser;
+      user?: {
+        id: string;
+        role?: string;
+      };
       userId?: string;
-      role?: 'user' | 'admin';
       clerkId?: string;
       isAuthenticated?: boolean;
     }
@@ -17,9 +18,11 @@ declare global {
 }
 
 export interface AuthRequest extends Request {
-  user?: IUser;
+  user?: {
+    id: string;
+    role?: string;
+  };
   userId?: string;
-  role?: 'user' | 'admin';
   clerkId?: string;
   isAuthenticated?: boolean;
 }
