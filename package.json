@@ -1,0 +1,13 @@
+{
+  "name": "mamiglo-ecommerce-app",
+  "version": "1.0.0",
+  "description": "Mamiglo E-commerce Application",
+  "type": "module",
+  "scripts": {
+    "dev": "cd server && npm run dev",
+    "build": "cd server && npm run build",
+    "start": "node api/index.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
