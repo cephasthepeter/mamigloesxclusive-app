@@ -5,19 +5,6 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
-// Import routes from compiled server
-import authRoutes from "../server/dist/routes/auth.js";
-import userRoutes from "../server/dist/routes/user.js";
-import productRoutes from "../server/dist/routes/product.js";
-import cartRoutes from "../server/dist/routes/cart.js";
-import orderRoutes from "../server/dist/routes/order.js";
-import adminRoutes from "../server/dist/routes/admin.js";
-import addressRoutes from "../server/dist/routes/address.js";
-import uploadsRoutes from "../server/dist/routes/uploads.js";
-import webhookRoutes from "../server/dist/routes/webhook.js";
-import { errorHandler } from "../server/dist/middleware/errorHandler.js";
-import { notFound } from "../server/dist/middleware/notFound.js";
-
 // Load environment variables
 dotenv.config();
 
@@ -30,17 +17,14 @@ app.use(
     origin:
       process.env.NODE_ENV === "production"
         ? ["https://mamiglo.com", "https://www.mamiglo.com"]
-        : ["http://localhost:8081", "http://localhost:3000"],
+        : ["http://localhost:8081", "http://localhost:3000", "*"],
     credentials: true,
   }),
 );
 
-// Webhook route MUST be before body parsing middleware
-app.use("/api/webhooks", webhookRoutes);
-
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: "Too many requests from this IP, please try again later.",
 });
@@ -62,19 +46,32 @@ app.get("/health", (req, res) => {
   });
 });
 
-// API routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/addresses", addressRoutes);
-app.use("/api/uploads", uploadsRoutes);
+// Root endpoint
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Mamiglo E-commerce API",
+    version: "1.0.0",
+    status: "operational",
+  });
+});
 
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
+// Catch-all for undefined routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.path,
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
 
 // Export app for Vercel
 export default app;
