@@ -8,6 +8,7 @@ import { Webhook, WebhookVerificationError } from 'svix';
 import connectDB from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
+import User from './models/User.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -84,10 +85,30 @@ app.post('/api/clerk', express.raw({ type: 'application/json' }), async (req, re
 
     console.log(`📨 Received Clerk webhook: ${event.type}`);
 
+    const { type, data } = event;
+
+    // Handle different event types
+    switch (type) {
+      case 'user.created':
+        await handleUserCreated(data);
+        break;
+      
+      case 'user.updated':
+        await handleUserUpdated(data);
+        break;
+      
+      case 'user.deleted':
+        await handleUserDeleted(data);
+        break;
+      
+      default:
+        console.warn(`⚠️  Unhandled webhook event type: ${type}`);
+    }
+
     // Acknowledge receipt
     res.status(200).json({ 
       success: true,
-      message: `Webhook ${event.type} processed successfully`,
+      message: `Webhook ${type} processed successfully`,
       eventId: svixId
     });
   } catch (err) {
@@ -98,6 +119,132 @@ app.post('/api/clerk', express.raw({ type: 'application/json' }), async (req, re
     });
   }
 });
+
+/**
+ * Handle user.created event - Create new user in database
+ */
+async function handleUserCreated(data: any) {
+  try {
+    const { 
+      id: clerkId, 
+      email_addresses, 
+      first_name, 
+      last_name, 
+      phone_numbers, 
+      image_url 
+    } = data;
+
+    // Validate required fields
+    if (!clerkId || !email_addresses?.[0]) {
+      console.warn('⚠️  Incomplete user data in webhook:', { clerkId, email: email_addresses?.[0]?.email_address });
+      return;
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ clerkId });
+    if (existingUser) {
+      console.log('ℹ️  User already exists:', clerkId);
+      return;
+    }
+
+    const user = await User.create({
+      clerkId,
+      email: email_addresses[0].email_address,
+      name: `${first_name || ''} ${last_name || ''}`.trim() || 'User',
+      phone: phone_numbers?.[0]?.phone_number,
+      avatar: image_url,
+      role: 'user',
+      isActive: true
+    });
+
+    console.log('✅ User created successfully:', {
+      id: user._id,
+      clerkId,
+      email: user.email,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('🔴 Error creating user from webhook:', error);
+  }
+}
+
+/**
+ * Handle user.updated event - Sync user changes to database
+ */
+async function handleUserUpdated(data: any) {
+  try {
+    const { 
+      id: clerkId, 
+      email_addresses, 
+      first_name, 
+      last_name, 
+      phone_numbers, 
+      image_url 
+    } = data;
+
+    if (!clerkId) {
+      console.warn('⚠️  Missing clerkId in user.updated event');
+      return;
+    }
+
+    const updateData: any = {};
+    if (email_addresses?.[0]) updateData.email = email_addresses[0].email_address;
+    if (first_name || last_name) updateData.name = `${first_name || ''} ${last_name || ''}`.trim();
+    if (phone_numbers?.[0]) updateData.phone = phone_numbers[0].phone_number;
+    if (image_url) updateData.avatar = image_url;
+
+    const user = await User.findOneAndUpdate(
+      { clerkId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (user) {
+      console.log('✅ User updated successfully:', {
+        id: user._id,
+        clerkId,
+        updatedFields: Object.keys(updateData),
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.warn('⚠️  User not found for update:', clerkId);
+    }
+  } catch (error) {
+    console.error('🔴 Error updating user from webhook:', error);
+  }
+}
+
+/**
+ * Handle user.deleted event - Soft delete user
+ */
+async function handleUserDeleted(data: any) {
+  try {
+    const { id: clerkId } = data;
+
+    if (!clerkId) {
+      console.warn('⚠️  Missing clerkId in user.deleted event');
+      return;
+    }
+
+    const user = await User.findOneAndUpdate(
+      { clerkId },
+      { isActive: false },
+      { new: true }
+    );
+
+    if (user) {
+      console.log('✅ User deleted successfully:', {
+        id: user._id,
+        clerkId,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.warn('⚠️  User not found for deletion:', clerkId);
+    }
+  } catch (error) {
+    console.error('🔴 Error deleting user from webhook:', error);
+  }
+}
 
 // Webhook route MUST be before body parsing middleware
 // to receive raw body for signature verification
