@@ -64,7 +64,8 @@ app.post(
         });
       }
 
-      const payload = req.body;
+      // Convert Buffer to string for signature verification
+      const payload = req.body.toString("utf-8");
       const headers = req.headers;
 
       const svixId = headers["svix-id"];
@@ -81,7 +82,7 @@ app.post(
       let event;
 
       try {
-        event = wh.verify(JSON.stringify(payload), {
+        event = wh.verify(payload, {
           "svix-id": svixId,
           "svix-timestamp": svixTimestamp,
           "svix-signature": svixSignature,
