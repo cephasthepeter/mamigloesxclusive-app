@@ -1,9 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && cd server && npm run build",
   "installCommand": "npm install --legacy-peer-deps && cd server && npm install --legacy-peer-deps",
-  "outputDirectory": ".",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }
