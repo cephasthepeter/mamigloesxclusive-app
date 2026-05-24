@@ -1,14 +1,11 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import compression from "compression";
-import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
-import { Webhook, WebhookVerificationError } from "svix";
-import mongoose from "mongoose";
-
-// Load environment variables
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const compression = require("compression");
+const rateLimit = require("express-rate-limit");
+require("dotenv").config();
+const { Webhook, WebhookVerificationError } = require("svix");
+const mongoose = require("mongoose");
 
 const app = express();
 
@@ -30,8 +27,10 @@ const connectDB = async () => {
   }
 };
 
-// Import User model
-import User from "../server/dist/models/User.js";
+// Import User model - requires compiled dist folder
+const User =
+  require("../server/dist/models/User.js").default ||
+  require("../server/dist/models/User.js");
 
 // Security middleware
 app.use(helmet());
@@ -39,14 +38,17 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
-        ? ["https://mamiglo.com", "https://www.mamiglo.com"]
+        ? [
+            "https://mamiglo.com",
+            "https://www.mamiglo.com",
+            "https://mamiglo-ecommerce-app.vercel.app",
+          ]
         : ["http://localhost:8081", "http://localhost:3000", "*"],
     credentials: true,
   }),
 );
 
 // Clerk webhook endpoint MUST be before body parsing
-// to receive raw body for signature verification
 app.post(
   "/api/clerk",
   express.raw({ type: "application/json" }),
@@ -195,7 +197,6 @@ async function handleUserCreated(data) {
       "🔴 Error stack:",
       error instanceof Error ? error.stack : "No stack trace",
     );
-    throw error;
   }
 }
 
@@ -264,7 +265,7 @@ async function handleUserDeleted(data) {
   }
 }
 
-// Rate limiting (AFTER webhook to avoid limiting webhook)
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -288,7 +289,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Test endpoint to verify setup
+// Test endpoint
 app.get("/test", async (req, res) => {
   try {
     console.log("🧪 Test endpoint called");
@@ -299,11 +300,9 @@ app.get("/test", async (req, res) => {
       !!process.env.CLERK_WEBHOOK_SECRET,
     );
 
-    // Try to connect to MongoDB
     await connectDB();
     console.log("✅ MongoDB connection successful");
 
-    // Try to query users
     const userCount = await User.countDocuments();
     console.log("✅ User model works, count:", userCount);
 
@@ -349,5 +348,5 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Export app for Vercel
-export default app;
+// Export for Vercel
+module.exports = app;
