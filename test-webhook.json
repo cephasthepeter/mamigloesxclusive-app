@@ -1,0 +1,16 @@
+{
+  "data": {
+    "id": "user_test_webhook_001",
+    "email_addresses": [
+      {
+        "email_address": "testuser@example.com"
+      }
+    ],
+    "first_name": "Test",
+    "last_name": "User",
+    "phone_numbers": [],
+    "image_url": "https://example.com/avatar.jpg"
+  },
+  "type": "user.created",
+  "object": "event"
+}
