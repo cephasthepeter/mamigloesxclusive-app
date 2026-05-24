@@ -136,6 +136,11 @@ app.post(
 // Handle user.created event
 async function handleUserCreated(data) {
   try {
+    console.log(
+      "📍 handleUserCreated called with data:",
+      JSON.stringify(data, null, 2),
+    );
+
     const {
       id: clerkId,
       email_addresses,
@@ -146,15 +151,25 @@ async function handleUserCreated(data) {
     } = data;
 
     if (!clerkId || !email_addresses?.[0]) {
-      console.warn("⚠️  Incomplete user data:", { clerkId });
+      console.warn("⚠️  Incomplete user data:", {
+        clerkId,
+        hasEmail: !!email_addresses?.[0],
+      });
       return;
     }
 
+    console.log("🔍 Checking for existing user with clerkId:", clerkId);
     const existingUser = await User.findOne({ clerkId });
     if (existingUser) {
       console.log("ℹ️  User already exists:", clerkId);
       return;
     }
+
+    console.log("📝 Creating user with data:", {
+      clerkId,
+      email: email_addresses[0].email_address,
+      name: `${first_name || ""} ${last_name || ""}`.trim() || "User",
+    });
 
     const user = await User.create({
       clerkId,
@@ -166,13 +181,21 @@ async function handleUserCreated(data) {
       isActive: true,
     });
 
-    console.log("✅ User created:", {
+    console.log("✅ User created successfully:", {
       id: user._id,
       clerkId,
       email: user.email,
     });
   } catch (error) {
-    console.error("🔴 Error creating user:", error);
+    console.error(
+      "🔴 Error creating user:",
+      error instanceof Error ? error.message : error,
+    );
+    console.error(
+      "🔴 Error stack:",
+      error instanceof Error ? error.stack : "No stack trace",
+    );
+    throw error;
   }
 }
 
@@ -263,6 +286,40 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
   });
+});
+
+// Test endpoint to verify setup
+app.get("/test", async (req, res) => {
+  try {
+    console.log("🧪 Test endpoint called");
+    console.log("✅ Node env:", process.env.NODE_ENV);
+    console.log("✅ MongoDB URI set:", !!process.env.MONGODB_URI);
+    console.log(
+      "✅ Clerk webhook secret set:",
+      !!process.env.CLERK_WEBHOOK_SECRET,
+    );
+
+    // Try to connect to MongoDB
+    await connectDB();
+    console.log("✅ MongoDB connection successful");
+
+    // Try to query users
+    const userCount = await User.countDocuments();
+    console.log("✅ User model works, count:", userCount);
+
+    res.status(200).json({
+      status: "OK",
+      mongodb: "Connected",
+      userCount,
+      environment: process.env.NODE_ENV,
+    });
+  } catch (error) {
+    console.error("❌ Test failed:", error);
+    res.status(500).json({
+      error: "Test failed",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
 
 // Root endpoint
