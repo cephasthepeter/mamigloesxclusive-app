@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "Mamiglo E-commerce Application",
   "type": "module",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "cd server && npm run dev",
-    "build": "cd server && npm run build",
+    "build": "npm install --legacy-peer-deps && cd server && npm install --legacy-peer-deps && npm run build",
     "start": "node api/index.js"
   },
   "dependencies": {

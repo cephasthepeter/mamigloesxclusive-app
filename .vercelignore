@@ -1,0 +1,13 @@
+node_modules
+.git
+.next
+.DS_Store
+*.log
+.env
+.env.*
+!.env.local
+!.env.production.local
+mamiglo/node_modules
+mamiglo/.next
+mamiglo/.expo
+mamiglo/dist
